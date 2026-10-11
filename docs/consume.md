@@ -2,43 +2,21 @@
 
 This package is `deflate`. `use deflate::{compress, decompress, Deflate, DeflateError}` resolves from `src/deflate.hy`. This repo is **private** (`https://github.com/ardax-corp/coil-deflate.git`); clone with credentials that can read it. There is no native/FFI dep.
 
-Coil-to-Coil deps will be spool-owned once a public `spool` CLI exists. Until then `{ git }` parses and the pin is `coil.lock` `rev` + `content_hash`.
+## Depend on it
 
-## Sibling checkout
+With [spool](https://github.com/ardax-corp/spool):
 
-Clone this repo next to your project. In the consumer `coil.toml`:
-
-```toml
-[module]
-roots = ["./src", "../coil-deflate/src"]
+```bash
+spool add deflate --git https://github.com/ardax-corp/coil-deflate.git --rev <commit SHA>
 ```
 
-`roots` is what loads `src/deflate.hy`. The compiler does not follow path deps for discovery.
+This repo has no tags, so pin a commit with `--rev`. spool records the dep in `coil.toml`, writes `coil.lock` (`rev` + `content_hash`), links `.spool/deps/deflate`, and passes `--root` for it and coil-stdlib to `coil` on `spool build` / `run` / `test`.
 
-## Git dep and coil.lock
+Without spool, clone this repo next to your project and pass the roots yourself. coil reads no `coil.toml` and no `coil.lock`.
 
-`{ git }` is the parseable form. `version` is optional schema, not a tag. `rev` on the dep is stored only. Do not run `spool add`. There is no public spool CLI.
-
-```toml
-[dependencies]
-deflate = { git = "https://github.com/ardax-corp/coil-deflate.git" }
-
-[module]
-roots = ["./src", "./.spool/deps/deflate/src"]
+```bash
+coil --root ../coil-deflate/src main.hy
 ```
-
-This repo has no tags. The pin is `coil.lock` `rev` + `content_hash`. Omit `tag`. Use sibling checkout until spool materializes `.spool/deps`. The compiler does not read `coil.lock` and does not inject roots.
-
-```
-# spool lockfile v1
-[[package]]
-name = 'deflate'
-git = 'https://github.com/ardax-corp/coil-deflate.git'
-rev = '<commit SHA>'
-content_hash = '<tree SHA>'
-```
-
-`rev` is the commit. `content_hash` is that commit's git tree (`git rev-parse 'HEAD^{tree}'`). Replace both when you move the pin.
 
 ## Call compress / decompress
 
