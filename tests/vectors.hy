@@ -1,4 +1,5 @@
 // Known raw DEFLATE vectors (not gzip members) and error cases.
+use tests::assert;
 use string::{to_bytes};
 use deflate::{compress, decompress, DeflateError};
 
@@ -41,8 +42,8 @@ test("zlib raw empty") {
     raw.push(3 as byte);
     raw.push(0 as byte);
     let (ok, out) = take_ok(decompress(raw));
-    assert(ok, "inflate")?;
-    assert(len(out) == 0, "empty")?;
+    assert!(ok, "inflate");
+    assert!(len(out) == 0, "empty");
 }
 
 test("stored empty") {
@@ -53,8 +54,8 @@ test("stored empty") {
     raw.push(255 as byte);
     raw.push(255 as byte);
     let (ok, out) = take_ok(decompress(raw));
-    assert(ok, "inflate")?;
-    assert(len(out) == 0, "stored empty")?;
+    assert!(ok, "inflate");
+    assert!(len(out) == 0, "stored empty");
 }
 
 test("zlib raw hello") {
@@ -67,8 +68,8 @@ test("zlib raw hello") {
     raw.push(7 as byte);
     raw.push(0 as byte);
     let (ok, out) = take_ok(decompress(raw));
-    assert(ok, "inflate")?;
-    assert(eq_bytes(out, to_bytes("hello")), "hello")?;
+    assert!(ok, "inflate");
+    assert!(eq_bytes(out, to_bytes("hello")), "hello");
 }
 
 test("zlib raw ten a") {
@@ -85,8 +86,8 @@ test("zlib raw ten a") {
         i = i + 1;
     }
     let (ok, out) = take_ok(decompress(raw));
-    assert(ok, "inflate")?;
-    assert(eq_bytes(out, want), "a10")?;
+    assert!(ok, "inflate");
+    assert!(eq_bytes(out, want), "a10");
 }
 
 test("stored hello") {
@@ -103,8 +104,8 @@ test("stored hello") {
         i = i + 1;
     }
     let (ok, out) = take_ok(decompress(raw));
-    assert(ok, "inflate")?;
-    assert(eq_bytes(out, hello), "stored hello")?;
+    assert!(ok, "inflate");
+    assert!(eq_bytes(out, hello), "stored hello");
 }
 
 test("dynamic huffman zlib raw") {
@@ -147,19 +148,19 @@ test("dynamic huffman zlib raw") {
         n = n + 1;
     }
     let (ok, out) = take_ok(decompress(raw));
-    assert(ok, "inflate")?;
-    assert(eq_bytes(out, want), "dynamic")?;
+    assert!(ok, "inflate");
+    assert!(eq_bytes(out, want), "dynamic");
 }
 
 test("empty input is invalid") {
     let empty: Vec<byte> = Vec::new();
-    assert(is_invalid(decompress(empty)), "empty")?;
+    assert!(is_invalid(decompress(empty)), "empty");
 }
 
 test("reserved block type is invalid") {
     let raw: Vec<byte> = Vec::new();
     raw.push(7 as byte);
-    assert(is_invalid(decompress(raw)), "btype 3")?;
+    assert!(is_invalid(decompress(raw)), "btype 3");
 }
 
 test("bad stored nlen is invalid") {
@@ -169,21 +170,21 @@ test("bad stored nlen is invalid") {
     raw.push(0 as byte);
     raw.push(0 as byte);
     raw.push(0 as byte);
-    assert(is_invalid(decompress(raw)), "nlen")?;
+    assert!(is_invalid(decompress(raw)), "nlen");
 }
 
 test("truncated stream is invalid") {
     let raw: Vec<byte> = Vec::new();
     raw.push(3 as byte);
-    assert(is_invalid(decompress(raw)), "trunc")?;
+    assert!(is_invalid(decompress(raw)), "trunc");
 }
 
 test("our compress inflates zlib empty shape") {
     let src: Vec<byte> = Vec::new();
     let (ok, raw) = take_ok(compress(src));
-    assert(ok, "compress")?;
-    assert(len(raw) >= 2, "bytes")?;
+    assert!(ok, "compress");
+    assert!(len(raw) >= 2, "bytes");
     let (dok, out) = take_ok(decompress(raw));
-    assert(dok, "decompress")?;
-    assert(eq_bytes(out, src), "empty")?;
+    assert!(dok, "decompress");
+    assert!(eq_bytes(out, src), "empty");
 }

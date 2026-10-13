@@ -1,4 +1,5 @@
 // Round-trip compress/decompress and encoder shape (LZ77 + Huffman, not stored-only).
+use tests::assert;
 use string::{to_bytes};
 use deflate::{compress, decompress, Deflate, DeflateError};
 
@@ -61,25 +62,25 @@ fn repeat_byte(byte c, int n) -> Vec<byte> {
 
 test("empty roundtrip") {
     let src: Vec<byte> = Vec::new();
-    assert(roundtrip(src), "empty")?;
+    assert!(roundtrip(src), "empty");
 }
 
 test("hello roundtrip") {
-    assert(roundtrip(to_bytes("hello")), "hello")?;
+    assert!(roundtrip(to_bytes("hello")), "hello");
 }
 
 test("repeated bytes are compressed") {
     let src = repeat_byte("a" as byte, 100);
     let (ok, raw) = take_ok(compress(src));
-    assert(ok, "compress")?;
-    assert(len(raw) < 50, "lz77 shrinks repeats")?;
+    assert!(ok, "compress");
+    assert!(len(raw) < 50, "lz77 shrinks repeats");
     let (dok, out) = take_ok(decompress(raw));
-    assert(dok, "decompress")?;
-    assert(eq_bytes(src, out), "repeat roundtrip")?;
+    assert!(dok, "decompress");
+    assert!(eq_bytes(src, out), "repeat roundtrip");
 }
 
 test("mixed text roundtrip") {
-    assert(roundtrip(to_bytes("The quick brown fox jumps over the lazy dog")), "pangram")?;
+    assert!(roundtrip(to_bytes("The quick brown fox jumps over the lazy dog")), "pangram");
 }
 
 test("binary-ish sequence roundtrip") {
@@ -91,15 +92,15 @@ test("binary-ish sequence roundtrip") {
         src.push(tri as byte);
         i = i + 1;
     }
-    assert(roundtrip(src), "seq")?;
+    assert!(roundtrip(src), "seq");
 }
 
 test("compress is not stored-only") {
     let src = repeat_byte("x" as byte, 80);
     let (ok, raw) = take_ok(compress(src));
-    assert(ok, "compress")?;
-    assert(len(raw) > 0, "nonempty")?;
+    assert!(ok, "compress");
+    assert!(len(raw) > 0, "nonempty");
     let hdr = raw[0] as int;
     let btype = (hdr >> 1) & 3;
-    assert(btype == 1, "fixed huffman block")?;
+    assert!(btype == 1, "fixed huffman block");
 }
