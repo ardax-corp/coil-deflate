@@ -14,11 +14,11 @@ fn is_invalid(Result<Vec<byte>, DeflateError> r) -> bool {
 }
 
 fn eq_bytes(Vec<byte> a, Vec<byte> b) -> bool {
-    if len(a) != len(b) {
+    if a.len() != b.len() {
         return false;
     }
     let i = 0;
-    while i < len(a) {
+    while i < a.len() {
         if a[i] != b[i] {
             return false;
         }
@@ -43,7 +43,7 @@ test("zlib raw empty") {
     raw.push(0 as byte);
     let (ok, out) = take_ok(decompress(raw));
     assert!(ok, "inflate");
-    assert!(len(out) == 0, "empty");
+    assert!(out.len() == 0, "empty");
 }
 
 test("stored empty") {
@@ -55,7 +55,7 @@ test("stored empty") {
     raw.push(255 as byte);
     let (ok, out) = take_ok(decompress(raw));
     assert!(ok, "inflate");
-    assert!(len(out) == 0, "stored empty");
+    assert!(out.len() == 0, "stored empty");
 }
 
 test("zlib raw hello") {
@@ -99,7 +99,7 @@ test("stored hello") {
     raw.push(255 as byte);
     let hello = to_bytes("hello");
     let i: int = 0;
-    while i < len(hello) {
+    while i < hello.len() {
         raw.push(hello[i]);
         i = i + 1;
     }
@@ -183,7 +183,7 @@ test("our compress inflates zlib empty shape") {
     let src: Vec<byte> = Vec::new();
     let (ok, raw) = take_ok(compress(src));
     assert!(ok, "compress");
-    assert!(len(raw) >= 2, "bytes");
+    assert!(raw.len() >= 2, "bytes");
     let (dok, out) = take_ok(decompress(raw));
     assert!(dok, "decompress");
     assert!(eq_bytes(out, src), "empty");

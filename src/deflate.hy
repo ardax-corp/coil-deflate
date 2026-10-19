@@ -267,7 +267,7 @@ impl BitReader {
 
     pub fn get_bit() -> Result<int, DeflateError> {
         if self.nbits == 0 {
-            if self.pos >= len(self.bytes) {
+            if self.pos >= self.bytes.len() {
                 raise invalid("truncated");
             }
             self.acc = self.bytes[self.pos] as int;
@@ -302,7 +302,7 @@ impl Huff {
         let counts = zeros_int(16);
         let first = zeros_int(16);
         let offs = zeros_int(16);
-        let nsym = len(lengths);
+        let nsym = lengths.len();
         let i = 0;
         let maxbits = 0;
         while i < nsym {
@@ -457,12 +457,12 @@ fn copy_match(Vec<byte> out, int dist, int length) -> Result<(), DeflateError> {
     if dist <= 0 {
         raise invalid("bad distance");
     }
-    if dist > len(out) {
+    if dist > out.len() {
         raise invalid("distance too far");
     }
     let k = 0;
     while k < length {
-        let src = len(out) - dist;
+        let src = out.len() - dist;
         out.push(out[src]);
         k = k + 1;
     }
@@ -497,18 +497,18 @@ fn inflate_codes(BitReader br, Huff ll, Huff dist, Vec<byte> out) -> Result<(), 
 
 fn read_code_lengths(BitReader br, Huff clen, int ncodes) -> Result<Vec<int>, DeflateError> {
     let lens: Vec<int> = Vec::new();
-    while len(lens) < ncodes {
+    while lens.len() < ncodes {
         let sym = clen.decode(br)?;
         if sym <= 15 {
             lens.push(sym);
             continue;
         }
         if sym == 16 {
-            if len(lens) == 0 {
+            if lens.len() == 0 {
                 raise invalid("repeat with no previous length");
             }
             let rep = 3 + br.get_bits(2)?;
-            let prev = lens[len(lens) - 1];
+            let prev = lens[lens.len() - 1];
             let k = 0;
             while k < rep {
                 lens.push(prev);
@@ -532,7 +532,7 @@ fn read_code_lengths(BitReader br, Huff clen, int ncodes) -> Result<Vec<int>, De
             k = k + 1;
         }
     }
-    if len(lens) != ncodes {
+    if lens.len() != ncodes {
         raise invalid("code length overflow");
     }
     return lens;
@@ -578,7 +578,7 @@ fn inflate_dynamic(BitReader br, Vec<byte> out) -> Result<(), DeflateError> {
 
 fn inflate_stored(BitReader br, Vec<byte> out) -> Result<(), DeflateError> {
     br.align();
-    if br.pos + 4 > len(br.bytes) {
+    if br.pos + 4 > br.bytes.len() {
         raise invalid("truncated stored length");
     }
     let ln = (br.bytes[br.pos] as int) | ((br.bytes[br.pos + 1] as int) << 8);
@@ -587,7 +587,7 @@ fn inflate_stored(BitReader br, Vec<byte> out) -> Result<(), DeflateError> {
         raise invalid("bad stored nlen");
     }
     br.pos = br.pos + 4;
-    if br.pos + ln > len(br.bytes) {
+    if br.pos + ln > br.bytes.len() {
         raise invalid("truncated stored data");
     }
     let k = 0;
@@ -607,7 +607,7 @@ class Deflate {
 impl Deflate {
     /// LZ77 + fixed Huffman. Not stored-only.
     pub static fn compress(Vec<byte> data) -> Result<Vec<byte>, DeflateError> {
-        let n = len(data);
+        let n = data.len();
         let w = BitWriter::new();
         w.write_bits(3, 3);
         let heads = filled_int(4096, -1);
@@ -648,7 +648,7 @@ impl Deflate {
 
     /// Inflate a raw DEFLATE bitstream (stored, fixed Huffman, dynamic Huffman).
     pub static fn decompress(Vec<byte> data) -> Result<Vec<byte>, DeflateError> {
-        if len(data) == 0 {
+        if data.len() == 0 {
             raise invalid("empty input");
         }
         let br = BitReader::new(data);
