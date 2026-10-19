@@ -4,11 +4,11 @@ use string::{to_bytes};
 use deflate::{compress, decompress, Deflate, DeflateError};
 
 fn eq_bytes(Vec<byte> a, Vec<byte> b) -> bool {
-    if len(a) != len(b) {
+    if a.len() != b.len() {
         return false;
     }
     let i = 0;
-    while i < len(a) {
+    while i < a.len() {
         if a[i] != b[i] {
             return false;
         }
@@ -73,7 +73,7 @@ test("repeated bytes are compressed") {
     let src = repeat_byte("a" as byte, 100);
     let (ok, raw) = take_ok(compress(src));
     assert!(ok, "compress");
-    assert!(len(raw) < 50, "lz77 shrinks repeats");
+    assert!(raw.len() < 50, "lz77 shrinks repeats");
     let (dok, out) = take_ok(decompress(raw));
     assert!(dok, "decompress");
     assert!(eq_bytes(src, out), "repeat roundtrip");
@@ -99,7 +99,7 @@ test("compress is not stored-only") {
     let src = repeat_byte("x" as byte, 80);
     let (ok, raw) = take_ok(compress(src));
     assert!(ok, "compress");
-    assert!(len(raw) > 0, "nonempty");
+    assert!(raw.len() > 0, "nonempty");
     let hdr = raw[0] as int;
     let btype = (hdr >> 1) & 3;
     assert!(btype == 1, "fixed huffman block");
