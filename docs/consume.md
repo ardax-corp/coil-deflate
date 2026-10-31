@@ -1,6 +1,6 @@
 # Consuming coil-deflate
 
-This package is `deflate`. `use deflate::{compress, decompress, Deflate, DeflateError}` resolves from `src/deflate.hy`. The repo is `https://github.com/ardax-corp/coil-deflate.git`. There is no native/FFI dep.
+This package is `deflate`. `use deflate::{compress, decompress, Deflate, DeflateError}` resolves from `src/deflate.coil`. The repo is `https://github.com/ardax-corp/coil-deflate.git`. There is no native/FFI dep.
 
 ## Depend on it
 
@@ -16,12 +16,12 @@ Without spool, clone this repo next to your project and pass the roots yourself.
 
 ```bash
 git clone https://github.com/ardax-corp/coil-deflate.git ../coil-deflate
-coil --root ../coil-deflate/src --root ../coil-stdlib/src main.hy
+coil --root ../coil-deflate/src --root ../coil-stdlib/src main.coil
 ```
 
 ## Call compress / decompress
 
-Signatures are in [`src/deflate.hy`](../src/deflate.hy). Call patterns are in [`tests/roundtrip.hy`](../tests/roundtrip.hy) and [`tests/vectors.hy`](../tests/vectors.hy).
+Signatures are in [`src/deflate.coil`](../src/deflate.coil). Call patterns are in [`tests/roundtrip.coil`](../tests/roundtrip.coil) and [`tests/vectors.coil`](../tests/vectors.coil).
 
 ```coil
 use string::{to_bytes};
