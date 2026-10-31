@@ -1,6 +1,6 @@
 # Consuming coil-deflate
 
-This package is `deflate`. `use deflate::{compress, decompress, Deflate, DeflateError}` resolves from `src/deflate.hy`. This repo is **private** (`https://github.com/ardax-corp/coil-deflate.git`); clone with credentials that can read it. There is no native/FFI dep.
+This package is `deflate`. `use deflate::{compress, decompress, Deflate, DeflateError}` resolves from `src/deflate.hy`. The repo is `https://github.com/ardax-corp/coil-deflate.git`. There is no native/FFI dep.
 
 ## Depend on it
 
@@ -15,7 +15,8 @@ This repo has no tags, so pin a commit with `--rev`. spool records the dep in `c
 Without spool, clone this repo next to your project and pass the roots yourself. coil reads no `coil.toml` and no `coil.lock`.
 
 ```bash
-coil --root ../coil-deflate/src main.hy
+git clone https://github.com/ardax-corp/coil-deflate.git ../coil-deflate
+coil --root ../coil-deflate/src --root ../coil-stdlib/src main.hy
 ```
 
 ## Call compress / decompress
@@ -26,9 +27,12 @@ Signatures are in [`src/deflate.hy`](../src/deflate.hy). Call patterns are in [`
 use string::{to_bytes};
 use deflate::{compress, decompress, Deflate, DeflateError};
 
-let raw = compress(to_bytes("hello"))?;
-let out = decompress(raw)?;
-let also = Deflate::decompress(raw)?;
+fn pack_and_unpack() -> Result<Vec<byte>, DeflateError> {
+    let raw = compress(to_bytes("hello"))?;
+    let out = decompress(raw)?;
+    let also = Deflate::decompress(raw)?;
+    return out;
+}
 ```
 
 `compress` / `decompress` take `Vec<byte>` and return `Result<Vec<byte>, DeflateError>`. Streams are raw DEFLATE (RFC 1951), not gzip members.
