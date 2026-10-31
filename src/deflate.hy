@@ -1,8 +1,36 @@
-// Package root. RFC 1951 raw DEFLATE (no zlib/gzip wrapper, no native).
-// Encoder: LZ77 + fixed Huffman. Inflater: stored, fixed, and dynamic Huffman.
+// Package root (`deflate`). RFC 1951 raw DEFLATE in pure Coil: no zlib or gzip
+// wrapper, no native library. `compress` / `decompress` are the entry points;
+// `Deflate` carries the same pair as static methods and `DeflateError` is the
+// failure type. Encoder: LZ77 + fixed Huffman. Inflater: stored, fixed, and
+// dynamic Huffman blocks. Everything below the error type down to `Deflate`
+// (bit I/O, Huffman tables, LZ77 matching) is internal.
 
-/// Inflate/deflate failure. `message` is a short reason, not a panic.
+/// Why `compress` or `decompress` failed.
+///
+/// Bad input is reported through this error, never a panic. There is one
+/// variant today; match it with a `default` arm so a later variant does not
+/// break your code.
+///
+/// # Examples
+///
+/// ```
+/// use deflate::{decompress, DeflateError};
+/// # use tests::assert;
+/// // 0b111: final block with the reserved block type 3.
+/// let bad: Vec<byte> = Vec::new();
+/// bad.push(7 as byte);
+/// let reason = match decompress(bad) {
+///     Result::Ok(_) => "",
+///     Result::Err(e) => match e {
+///         DeflateError::Invalid { message } => message,
+///         default => "other",
+///     },
+/// };
+/// assert!(reason == "reserved block type");
+/// ```
 enum DeflateError {
+    /// The input is not a valid DEFLATE stream. `message` is a short reason,
+    /// such as `"empty input"`, `"truncated"` or `"bad huffman symbol"`.
     Invalid { message: string },
 }
 
@@ -599,13 +627,52 @@ fn inflate_stored(BitReader br, Vec<byte> out) -> Result<(), DeflateError> {
     return ();
 }
 
-/// RFC 1951 codec. `compress` emits LZ77 + fixed Huffman; `decompress` inflates stored/fixed/dynamic.
+/// The RFC 1951 codec, as a namespace for `Deflate::compress` and
+/// `Deflate::decompress`.
+///
+/// The free functions `compress` and `decompress` call these and behave the
+/// same; use whichever spelling reads better. There is nothing to construct.
+///
+/// # Examples
+///
+/// ```
+/// use deflate::{Deflate};
+/// use string::{to_bytes};
+/// # use tests::assert;
+/// let src = to_bytes("abcabcabcabc");
+/// let packed = Deflate::compress(src).ok() ?? Vec::new();
+/// let back = Deflate::decompress(packed).ok() ?? Vec::new();
+/// assert!(back == src);
+/// ```
 class Deflate {
     _unused: int,
 }
 
 impl Deflate {
-    /// LZ77 + fixed Huffman. Not stored-only.
+    /// Compresses `data` into a raw DEFLATE stream (RFC 1951, no zlib or gzip
+    /// wrapper).
+    ///
+    /// The output is one final block coded with LZ77 matches (32 KiB window,
+    /// lengths 3 to 258) and the fixed Huffman tables, so repetitive input
+    /// shrinks; it never falls back to stored blocks, so input with no
+    /// repeats can grow slightly. Empty input gives a valid stream that
+    /// decompresses to empty.
+    ///
+    /// # Errors
+    ///
+    /// The encoder does not fail today; the `Result` keeps the signature in
+    /// step with `decompress`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use deflate::{Deflate};
+    /// use string::{to_bytes};
+    /// # use tests::assert;
+    /// let src = to_bytes("to be or not to be, to be or not to be");
+    /// let packed = Deflate::compress(src).ok() ?? Vec::new();
+    /// assert!(packed.len() < src.len());
+    /// ```
     pub static fn compress(Vec<byte> data) -> Result<Vec<byte>, DeflateError> {
         let n = data.len();
         let w = BitWriter::new();
@@ -646,7 +713,31 @@ impl Deflate {
         return w.finish();
     }
 
-    /// Inflate a raw DEFLATE bitstream (stored, fixed Huffman, dynamic Huffman).
+    /// Decompresses a raw DEFLATE stream (RFC 1951) back to its bytes.
+    ///
+    /// Reads stored, fixed Huffman and dynamic Huffman blocks until the block
+    /// marked final, so streams from other encoders (zlib, gzip bodies) work.
+    /// Bytes after the final block are ignored.
+    ///
+    /// # Errors
+    ///
+    /// Returns `DeflateError::Invalid` for empty input, a truncated stream, the
+    /// reserved block type, a bad stored-block length, malformed Huffman
+    /// tables or codes, or a back-reference past the start of the output.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use deflate::{Deflate};
+    /// # use tests::assert;
+    /// // A fixed-Huffman block holding just the end-of-block code.
+    /// let empty: Vec<byte> = Vec::new();
+    /// empty.push(3 as byte);
+    /// empty.push(0 as byte);
+    /// let out = Deflate::decompress(empty).ok() ?? Vec::new();
+    /// assert!(out.len() == 0);
+    /// assert!(Deflate::decompress(Vec::new()).is_err());
+    /// ```
     pub static fn decompress(Vec<byte> data) -> Result<Vec<byte>, DeflateError> {
         if data.len() == 0 {
             raise invalid("empty input");
@@ -679,12 +770,58 @@ impl Deflate {
     }
 }
 
-/// LZ77 + fixed Huffman compress (raw DEFLATE, no zlib wrapper).
+/// Compresses `data` into a raw DEFLATE stream (RFC 1951, no zlib or gzip
+/// wrapper). Same as `Deflate::compress`.
+///
+/// Uses LZ77 matching with the fixed Huffman tables. Input with no repeats
+/// can come out slightly larger than it went in.
+///
+/// # Errors
+///
+/// The encoder does not fail today; the `Result` keeps the signature in step
+/// with `decompress`.
+///
+/// # Examples
+///
+/// ```
+/// use deflate::{compress, decompress};
+/// use string::{to_bytes, from_bytes};
+/// # use tests::assert;
+/// let packed = compress(to_bytes("hello hello hello hello")).ok() ?? Vec::new();
+/// let back = decompress(packed).ok() ?? Vec::new();
+/// assert!((from_bytes(back).ok() ?? "") == "hello hello hello hello");
+/// ```
 fn compress(Vec<byte> data) -> Result<Vec<byte>, DeflateError> {
     return Deflate::compress(data)?;
 }
 
-/// Inflate raw DEFLATE (RFC 1951 blocks).
+/// Decompresses a raw DEFLATE stream (RFC 1951) back to its bytes. Same as
+/// `Deflate::decompress`.
+///
+/// Accepts stored, fixed Huffman and dynamic Huffman blocks. The input must be
+/// bare DEFLATE: strip a gzip or zlib header and trailer first.
+///
+/// # Errors
+///
+/// Returns `DeflateError::Invalid` when the input is empty, truncated or
+/// malformed. It never panics on bad input.
+///
+/// # Examples
+///
+/// ```
+/// use deflate::{compress, decompress, DeflateError};
+/// use string::{to_bytes};
+/// # use tests::assert;
+/// fn roundtrip(Vec<byte> data) -> Result<Vec<byte>, DeflateError> {
+///     return decompress(compress(data)?)?;
+/// }
+///
+/// fn main() {
+///     let src = to_bytes("abracadabra");
+///     assert!((roundtrip(src).ok() ?? Vec::new()) == src);
+///     assert!(decompress(Vec::new()).is_err());
+/// }
+/// ```
 fn decompress(Vec<byte> data) -> Result<Vec<byte>, DeflateError> {
     return Deflate::decompress(data)?;
 }
