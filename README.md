@@ -22,7 +22,7 @@ fn main() {
 }
 ```
 
-Run it with `coil --root ../coil-deflate/src --root ../coil-stdlib/src main.hy` (or `spool run`).
+Run it with `coil --root ../coil-deflate/src --root ../coil-stdlib/src main.coil` (or `spool run`).
 
 ## API
 
@@ -39,7 +39,7 @@ Run it with `coil --root ../coil-deflate/src --root ../coil-stdlib/src main.hy` 
 
 | Path | Role |
 |------|------|
-| `src/deflate.hy` | The `deflate` module: `compress` / `decompress`, `Deflate`, `DeflateError`, and the internal encoder/inflater |
+| `src/deflate.coil` | The `deflate` module: `compress` / `decompress`, `Deflate`, `DeflateError`, and the internal encoder/inflater |
 | `tests/` | Round-trip, known-vector and error-case tests (`coil test`) |
 | `coil.toml` | spool manifest (`[package] name = "deflate"`); coil does not read it |
 
